@@ -14,56 +14,53 @@ Key Innovation: Multi-layer stacking with heterogeneous base learners optimized 
 Base Learner Models (Layer 1)
 Each base learner generates out-of-fold (OOF) predictions on training data and test predictions, which serve as input to the meta-learning layer:
 
-LightGBM + Genetic Programming (lgb_gp.py)
+**LightGBM + Genetic Programming (`lgb_gp.py`)**
+
 
 Symbolic feature engineering via genetic programming (SymbolicTransformer)
-
 Generates synthetic features through evolutionary algorithms
-
 Base features concatenated with GP-derived features for improved signal
-
 50 Optuna trials for hyperparameter optimization
 
-CatBoost Native (catboost_raw.py)
+
+**CatBoost Native (catboost_raw.py)**
+
 
 Built-in categorical feature handling (no manual encoding)
-
 Avoids categorical encoding bias introduced by label encoding
-
 25 Optuna trials optimizing tree depth, learning rate, and regularization
-
 Efficient handling of mixed data types
 
-XGBoost + KNN Imputation (xgb_knn.py)
+
+
+**XGBoost + KNN Imputation (xgb_knn.py)**
+
 
 StandardScaler normalization + KNN imputation (k=5 neighbors)
-
 Leverages manifold structure for missing value handling
-
 50 Optuna trials with XGBoost-specific parameters (gamma, min_child_weight)
-
 Complementary to gradient-based feature scaling in other models
 
-Meta-Learner (Layer 2)
+
+
+**Meta-Learner (Layer 2)**
 meta_learner.py trains two secondary models on base learner predictions:
 
-LightGBM Meta-Learner
+**LightGBM Meta-Learner**
 
 30 Optuna trials with shallow hyperparameters (max_depth=2-5)
-
 Shallow trees reduce overfitting on OOF predictions
-
 Learns feature interactions between base models
 
-Ridge Regression Meta-Learner
+**Ridge Regression Meta-Learner**
 
 Linear blending with L2 regularization
+Output clipped to [0, 1] for probability calibration (Though, this depends on the evaluation metric )
+purpose to include a linear model as meta learner : Provides stability and interpretability
 
-Output clipped to [0, 1] for probability calibration
 
-Provides stability and interpretability
+**Ensemble Weighting: Final predictions are weighted by cross-validation performance**
 
-Ensemble Weighting: Final predictions are weighted by cross-validation performance:
 Ensemble submission file = weighted average of both meta learners based on their CV score ( eg 0.55 * LGB + 0.45 * ridge ) 
 
  
