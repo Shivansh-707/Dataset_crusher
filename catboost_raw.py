@@ -7,8 +7,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Fill these out bro
-target = "diagnosed_diabetes"
-evaluation_metric = "roc_auc"
+target = ""
+evaluation_metric = ""
 
 # Load data
 train = pd.read_csv('train.csv')
