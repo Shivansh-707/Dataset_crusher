@@ -6,7 +6,7 @@ import optuna
 import warnings
 warnings.filterwarnings('ignore')
 
-# Fill these out bro
+# Fill these details out bro
 target = ""
 evaluation_metric = ""
 
