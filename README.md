@@ -1,66 +1,48 @@
-# MetaBoost , a dataset crusher 
-Insert raw data --> get a great submission file 
+MetaBoost 🚀
+"A Dataset Crusher — Insert raw data → Get a great submission file"
 
+📖 Overview
+MetaBoost is a production-ready advanced ensemble learning pipeline for binary classification tasks on tabular data. It combines the strengths of multiple gradient boosting frameworks and meta-learners through multi-layer stacking and blending to maximize predictive performance.
 
-Advanced Ensemble Learning for Binary Classification
-A production-ready machine learning pipeline featuring a sophisticated stacking/blending ensemble that combines LightGBM with genetic programming, CatBoost native categorical handling, XGBoost with KNN imputation, and dual meta-learners (LightGBM + Ridge regression) for robust binary classification on tabular data.
+While optimized for medical prediction tasks (for example, diabetes detection), its modular design generalizes to any binary classification problem with structured data.
 
-🎯 Project Overview
-This repository implements an advanced ensemble architecture that achieves superior predictive performance through diversity across multiple boosting frameworks and preprocessing strategies. The pipeline is particularly effective for medical prediction tasks (e.g., diabetes diagnosis) but generalizes to any binary classification problem with tabular data.
+🎯 Key Highlights
+Diverse Ensemble Models: LightGBM, CatBoost, XGBoost with different preprocessing strategies.
 
-Key Innovation: Multi-layer stacking with heterogeneous base learners optimized via Optuna hyperparameter tuning, followed by weighted meta-learner blending based on cross-validation performance.
+Meta-Learning Architecture: Dual-layer stacking with LightGBM and Ridge Regression as meta-learners.
 
-🏗️ Architecture
-Base Learner Models (Layer 1)
-Each base learner generates out-of-fold (OOF) predictions on training data and test predictions, which serve as input to the meta-learning layer:
+Hyperparameter Optimization: Automated with Optuna on every major component.
 
-**LightGBM + Genetic Programming (`lgb_gp.py`)**
+Genetic Programming Features: Symbolic feature engineering using evolutionary methods.
 
+Automatic Weighting: Cross-validation–based weighting for final prediction blending.
 
-Symbolic feature engineering via genetic programming (SymbolicTransformer)
-Generates synthetic features through evolutionary algorithms
-Base features concatenated with GP-derived features for improved signal
-50 Optuna trials for hyperparameter optimization
+🧠 Architecture
+Layer 1: Base Learners
+Each base learner generates out-of-fold (OOF) predictions on the training data and predictions on the test data. These predictions become features for the meta-learning layer.
 
+Base Model	File	Description	Key Techniques	Optuna Trials
+LightGBM + Genetic Programming	lgb_gp.py	Hybrid feature engineering + boosting	Symbolic feature synthesis via genetic programming (SymbolicTransformer); GP-derived synthetic features concatenated with original features	50
+CatBoost Native	catboost_raw.py	Native handling of categorical variables	Uses CatBoost’s built-in categorical processing (no manual encoding), avoids label-encoding bias, handles mixed data types	25
+XGBoost + KNN Imputation	xgb_knn.py	Gradient boosting with robust missing-data strategy	StandardScaler + KNN imputation (k = 5); exploits local manifold for missing value handling; XGBoost-specific tuning (gamma, min_child_weight, etc.)	50
+Layer 2: Meta Learners
+The meta_learner consumes OOF predictions from the base models and learns how to optimally combine them.
 
-**CatBoost Native (catboost_raw.py)**
+Meta Model	File	Description	Purpose	Optuna Trials
+LightGBM Meta-Learner	meta_learner.py	Shallow LightGBM on top of base model predictions	Captures non-linear interactions between base model outputs while controlling overfitting with small depth trees	30
+Ridge Regression	meta_learner.py	Linear model with L2 regularization	Adds a stable, interpretable linear blending component; output can be clipped to if needed for probability calibration	– (configurable)
+Ensemble Blending
+Final predictions are produced via a weighted average of the meta-learners (or directly of the base models, depending on your configuration), where each weight is proportional to model performance on cross-validation.
 
+Plain-text formula (so GitHub renders it safely):
 
-Built-in categorical feature handling (no manual encoding)
-Avoids categorical encoding bias introduced by label encoding
-25 Optuna trials optimizing tree depth, learning rate, and regularization
-Efficient handling of mixed data types
+Final_Prediction = w1 * P1 + w2 * P2 + ... + wn * Pn
 
+where:
 
+Pi = predictions from model i (base or meta),
 
-**XGBoost + KNN Imputation (xgb_knn.py)**
+wi = weight derived from cross-validation performance of model i,
 
+and sum(wi) = 1.
 
-StandardScaler normalization + KNN imputation (k=5 neighbors)
-Leverages manifold structure for missing value handling
-50 Optuna trials with XGBoost-specific parameters (gamma, min_child_weight)
-Complementary to gradient-based feature scaling in other models
-
-
-
-**Meta-Learner (Layer 2)**
-meta_learner.py trains two secondary models on base learner predictions:
-
-**LightGBM Meta-Learner**
-
-30 Optuna trials with shallow hyperparameters (max_depth=2-5)
-Shallow trees reduce overfitting on OOF predictions
-Learns feature interactions between base models
-
-**Ridge Regression Meta-Learner**
-
-Linear blending with L2 regularization
-Output clipped to [0, 1] for probability calibration (Though, this depends on the evaluation metric )
-purpose to include a linear model as meta learner : Provides stability and interpretability
-
-
-**Ensemble Weighting: Final predictions are weighted by cross-validation performance**
-
-Ensemble submission file = weighted average of both meta learners based on their CV score ( eg 0.55 * LGB + 0.45 * ridge ) 
-
- 
