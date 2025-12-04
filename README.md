@@ -1,48 +1,67 @@
-MetaBoost 🚀
-"A Dataset Crusher — Insert raw data → Get a great submission file"
+# MetaBoost 🚀
+**A Dataset Crusher — Insert raw data → Get a great submission file**
 
-📖 Overview
-MetaBoost is a production-ready advanced ensemble learning pipeline for binary classification tasks on tabular data. It combines the strengths of multiple gradient boosting frameworks and meta-learners through multi-layer stacking and blending to maximize predictive performance.
+---
 
-While optimized for medical prediction tasks (for example, diabetes detection), its modular design generalizes to any binary classification problem with structured data.
+## 📖 Overview
+MetaBoost is a production-ready, advanced ensemble learning pipeline for **binary classification** on tabular data.  
+It combines multiple gradient-boosting frameworks with meta-learners using multi-layer stacking and blending to maximize predictive performance.
 
-🎯 Key Highlights
-Diverse Ensemble Models: LightGBM, CatBoost, XGBoost with different preprocessing strategies.
+Although optimized for medical prediction tasks (e.g., diabetes detection), the modular design generalizes to **any binary classification problem** with structured data.
 
-Meta-Learning Architecture: Dual-layer stacking with LightGBM and Ridge Regression as meta-learners.
+---
 
-Hyperparameter Optimization: Automated with Optuna on every major component.
+## 🎯 Key Highlights
+- **Diverse ensemble models**: LightGBM, CatBoost, XGBoost with different preprocessing strategies  
+- **Meta-learning architecture**: Dual-layer stacking with LightGBM and Ridge Regression as meta-learners  
+- **Hyperparameter optimization**: Automated with Optuna for each major component  
+- **Genetic programming features**: Symbolic feature engineering using evolutionary methods  
+- **Automatic weighting**: Cross-validation–based weighting for final prediction blending
 
-Genetic Programming Features: Symbolic feature engineering using evolutionary methods.
+---
 
-Automatic Weighting: Cross-validation–based weighting for final prediction blending.
+## 🧠 Architecture
 
-🧠 Architecture
-Layer 1: Base Learners
-Each base learner generates out-of-fold (OOF) predictions on the training data and predictions on the test data. These predictions become features for the meta-learning layer.
+### Layer 1 — Base Learners
+Each base learner generates **out-of-fold (OOF)** predictions on the train set and test predictions. OOF predictions become features for the meta-learning layer.
 
-Base Model	File	Description	Key Techniques	Optuna Trials
-LightGBM + Genetic Programming	lgb_gp.py	Hybrid feature engineering + boosting	Symbolic feature synthesis via genetic programming (SymbolicTransformer); GP-derived synthetic features concatenated with original features	50
-CatBoost Native	catboost_raw.py	Native handling of categorical variables	Uses CatBoost’s built-in categorical processing (no manual encoding), avoids label-encoding bias, handles mixed data types	25
-XGBoost + KNN Imputation	xgb_knn.py	Gradient boosting with robust missing-data strategy	StandardScaler + KNN imputation (k = 5); exploits local manifold for missing value handling; XGBoost-specific tuning (gamma, min_child_weight, etc.)	50
-Layer 2: Meta Learners
-The meta_learner consumes OOF predictions from the base models and learns how to optimally combine them.
+| Base Model | File | Description | Key Techniques | Optuna Trials |
+|------------|------|-------------|----------------|---------------|
+| LightGBM + Genetic Programming | `lgb_gp.py` | Hybrid feature engineering + boosting | Symbolic feature synthesis via genetic programming (`SymbolicTransformer`); GP-derived features concatenated with original features | 50 |
+| CatBoost Native | `catboost_raw.py` | Native handling of categorical variables | Uses CatBoost’s built-in categorical processing (no manual encoding) | 25 |
+| XGBoost + KNN Imputation | `xgb_knn.py` | Gradient boosting with robust missing-data strategy | StandardScaler + KNN imputation (k=5); XGBoost-specific tuning (gamma, min_child_weight, etc.) | 50 |
 
-Meta Model	File	Description	Purpose	Optuna Trials
-LightGBM Meta-Learner	meta_learner.py	Shallow LightGBM on top of base model predictions	Captures non-linear interactions between base model outputs while controlling overfitting with small depth trees	30
-Ridge Regression	meta_learner.py	Linear model with L2 regularization	Adds a stable, interpretable linear blending component; output can be clipped to if needed for probability calibration	– (configurable)
-Ensemble Blending
-Final predictions are produced via a weighted average of the meta-learners (or directly of the base models, depending on your configuration), where each weight is proportional to model performance on cross-validation.
+### Layer 2 — Meta Learners
+The meta_learner consumes OOF predictions from base models and learns how to optimally combine them.
 
-Plain-text formula (so GitHub renders it safely):
+| Meta Model | File | Description | Purpose | Optuna Trials |
+|------------|------|-------------|--------|---------------|
+| LightGBM Meta-Learner | `meta_learner.py` | Shallow LightGBM on top of base predictions | Captures non-linear interactions between base outputs while controlling overfitting | 30 |
+| Ridge Regression | `meta_learner.py` | Linear model with L2 regularization | Stable, interpretable linear blending; can be clipped for probability calibration | – (configurable) |
 
-Final_Prediction = w1 * P1 + w2 * P2 + ... + wn * Pn
+---
 
-where:
+## 🧩 Ensemble Blending
+Final predictions are produced via a weighted average of meta-learners (or base models, depending on configuration). Weights are proportional to model performance measured on cross-validation.
 
-Pi = predictions from model i (base or meta),
+**Formula:**
+Where:  
+- `Pi` = predictions from model i (base or meta)  
+- `wi` = weight derived from CV performance of model i  
+- `sum(wi) = 1`
 
-wi = weight derived from cross-validation performance of model i,
+---
 
-and sum(wi) = 1.
+## 🏗️ Pipeline Workflow
+1. Load raw tabular data (`train.csv`, `test.csv`)  
+2. Apply preprocessing & feature engineering:
+   - Standard scaling  
+   - KNN imputation (for XGBoost branch)  
+   - Genetic programming–based symbolic features (for LightGBM GP branch)  
+3. Train base learners with Optuna-tuned hyperparameters  
+4. Generate OOF predictions for stacking  
+5. Train meta-learners on OOF predictions  
+6. Compute performance-based weights  
+7. Produce final submission file via weighted blending
+
 
